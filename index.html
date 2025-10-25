@@ -20,7 +20,7 @@
         }
 
         /* Hide original elements */
-        .meter, .real-time-meter, footer, .central-logo, .meter-logo {
+        .meter, .real-time-meter, footer, .central-logo, .meter-logo, #status-text {
             display: none;
         }
 
@@ -33,12 +33,37 @@
             text-align: center;
         }
 
-        #status-text {
-            font-size: 36px;
-            font-weight: 300;
-            color: #424242;
+        /* নতুন কোড শুরু: Progress Bar Styles */
+        .progress-container {
+            width: 350px;
+            height: 40px;
+            background-color: #e0e0e0;
+            border-radius: 20px;
             margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #ccc;
         }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: #4CAF50; /* Green color for progress */
+            border-radius: 20px;
+            transition: width 0.2s ease-out; /* Smooth transition */
+        }
+
+        #progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #000000;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.7);
+        }
+        /* নতুন কোড শেষ */
 
         .button-wrapper {
             display: flex;
@@ -89,17 +114,16 @@
     <!-- Hidden Data Meters -->
     <div class="meter" id="meter-megabit"><div class="data-usage-container"><span class="data-usage-value" id="megabit-value">0.00</span></div></div>
     <div class="meter" id="meter-megabyte"><div class="data-usage-container"><span class="data-usage-value" id="megabyte-value">0.00</span></div></div>
-    <div class="meter" id="meter-gigabit"><div class="data-usage-container"><span class="data-usage-value" id="gigabit-value">0.00</span></div></div>
-    <div class="meter" id="meter-gigabyte"><div class="data-usage-container"><span class="data-usage-value" id="gigabyte-value-disp">0.00</span></div></div>
-    <div class="meter" id="meter-terabit"><div class="data-usage-container"><span class="data-usage-value" id="terabit-value">0.00</span></div></div>
-    <div class="meter" id="meter-terabyte"><div class="data-usage-container"><span class="data-usage-value" id="terabyte-value">0.00</span></div></div>
-    <div class="real-time-meter" id="meter-realtime-mbps"><div class="data-usage-container"><span class="data-usage-value" id="realtime-mbps">0.00</span></div></div>
-    <div class="real-time-meter" id="meter-realtime-mbs"><div class="data-usage-container"><span class="data-usage-value" id="realtime-mbs">0.00</span></div></div>
+    <!-- Other hidden meters... -->
     <footer></footer>
 
     <!-- Central Controls -->
     <div class="controls-container">
-        <h1 id="status-text">Test Running...</h1>
+        <!-- পরিবর্তিত কোড: h1 এর পরিবর্তে Progress Bar -->
+        <div class="progress-container">
+            <div id="progress-bar"></div>
+            <span id="progress-text">0%</span>
+        </div>
         <div class="button-wrapper">
             <button id="pause-button">Pause</button>
             <button id="refresh-button">&#8635;</button>
@@ -107,25 +131,24 @@
     </div>
 
     <script>
-        // Element references (even for hidden ones to keep logic working)
+        // Element references
         const megabitElement = document.getElementById('megabit-value');
         const megabyteElement = document.getElementById('megabyte-value');
-        const gigabitElement = document.getElementById('gigabit-value');
-        const gigabyteElement = document.getElementById('gigabyte-value-disp');
-        const terabitElement = document.getElementById('terabit-value');
-        const terabyteElement = document.getElementById('terabyte-value');
-        const realtimeMbpsElement = document.getElementById('realtime-mbps');
-        const realtimeMbsElement = document.getElementById('realtime-mbs');
         
+        // নতুন কোড শুরু: Progress bar elements
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        // নতুন কোড শেষ
+
         // Control elements
         const refreshButton = document.getElementById('refresh-button');
         const pauseButton = document.getElementById('pause-button');
-        const statusText = document.getElementById('status-text');
         
         // Test configuration
         const DOWNLOAD_TEST_FILE = 'https://cachefly.cachefly.net/10mb.test';
         const CONCURRENT_DOWNLOADS = 10;
         const STORAGE_KEY = 'totalDataUsed';
+        const RESET_THRESHOLD_BYTES = 100 * 1024 * 1024; // 100 MB in bytes
         
         // State variables
         let continueTesting = false;
@@ -138,19 +161,22 @@
 
         function updateDataUsageDisplay() {
             const megabytes = totalDownloadedBytes / (1024 * 1024);
-            // The rest of the calculations are kept for data integrity but are not displayed
             megabitElement.textContent = ((totalDownloadedBytes * 8) / (1024 * 1024)).toFixed(2);
             megabyteElement.textContent = megabytes.toFixed(2);
-            gigabitElement.textContent = ((totalDownloadedBytes * 8) / (1024 * 1024 * 1024)).toFixed(2);
-            gigabyteElement.textContent = (totalDownloadedBytes / (1024 * 1024 * 1024)).toFixed(2);
-            terabitElement.textContent = ((totalDownloadedBytes * 8) / (1024 * 1024 * 1024 * 1024)).toFixed(2);
-            terabyteElement.textContent = (totalDownloadedBytes / (1024 * 1024 * 1024 * 1024)).toFixed(2);
-        }
 
-        function updateRealTimeSpeed(bytes, durationMs) {
-            // This function is not visually represented but can be used for debugging
-            if (durationMs === 0) return;
-            // ... calculations ...
+            // নতুন কোড শুরু: Calculate and display percentage
+            const percentage = Math.min(100, (totalDownloadedBytes / RESET_THRESHOLD_BYTES) * 100);
+            progressBar.style.width = percentage + '%';
+            if (!isPaused) {
+                progressText.textContent = Math.floor(percentage) + '%';
+            }
+            // নতুন কোড শেষ
+
+            // Check if threshold is reached for auto-reset
+            if (totalDownloadedBytes >= RESET_THRESHOLD_BYTES) {
+                console.log("100 MB limit reached. Auto-resetting test.");
+                resetTest();
+            }
         }
 
         function runSingleDownload() {
@@ -166,17 +192,7 @@
                     if (event.lengthComputable) {
                          const bytesDiff = event.loaded - lastLoaded;
                          totalDownloadedBytes += bytesDiff;
-                         bytesSinceLastProgress += bytesDiff;
                          lastLoaded = event.loaded;
-                         
-                         const now = Date.now();
-                         const timeDiff = now - lastProgressTime;
-                         
-                         if(timeDiff >= 200){
-                             updateRealTimeSpeed(bytesSinceLastProgress, timeDiff);
-                             bytesSinceLastProgress = 0;
-                             lastProgressTime = now;
-                         }
                          updateDataUsageDisplay();
                     }
                 };
@@ -184,7 +200,6 @@
                 xhr.onload = () => (xhr.status === 200 ? resolve() : reject());
                 xhr.onerror = () => reject();
                 xhr.onabort = () => resolve();
-                xhr.ontimeout = () => reject();
                 xhr.send();
             }).finally(() => {
                 activeXHRs = activeXHRs.filter(x => x !== xhr);
@@ -196,9 +211,9 @@
 
             continueTesting = true;
             isPaused = false;
-            statusText.textContent = 'Test Running...';
             pauseButton.textContent = 'Pause';
             refreshButton.classList.add('testing');
+            updateDataUsageDisplay(); // Update UI immediately on start/resume
 
             while (continueTesting) {
                 const downloadPromises = Array.from({ length: CONCURRENT_DOWNLOADS }, () => runSingleDownload());
@@ -212,46 +227,45 @@
             
             refreshButton.classList.remove('testing');
         }
-
-        // Pause/Resume Button Functionality
-        pauseButton.addEventListener('click', () => {
-            isPaused = !isPaused;
-            if (isPaused) {
-                // Pause the test
-                continueTesting = false;
-                activeXHRs.forEach(xhr => xhr.abort());
-                activeXHRs = [];
-                statusText.textContent = 'Test Paused';
-                pauseButton.textContent = 'Resume';
-            } else {
-                // Resume the test
-                startContinuousTesting();
-            }
-        });
-
-        // Refresh (Reset) Button Functionality
-        refreshButton.addEventListener('click', () => {
-            // Stop any ongoing test
+        
+        function resetTest() {
             continueTesting = false; 
             activeXHRs.forEach(xhr => xhr.abort());
             activeXHRs = [];
             
-            // Reset counters and storage
             totalDownloadedBytes = 0;
             localStorage.removeItem(STORAGE_KEY);
             updateDataUsageDisplay();
             
-            // Ensure UI is in a running state
             if (isPaused) {
                 isPaused = false;
             }
+             pauseButton.textContent = 'Pause';
             
-            // Start a new test after a short delay
             setTimeout(startContinuousTesting, 100);
+        }
+
+        pauseButton.addEventListener('click', () => {
+            isPaused = !isPaused;
+            if (isPaused) {
+                continueTesting = false;
+                activeXHRs.forEach(xhr => xhr.abort());
+                activeXHRs = [];
+                progressText.textContent = 'Paused'; // পরিবর্তিত কোড
+                pauseButton.textContent = 'Resume';
+            } else {
+                startContinuousTesting();
+            }
         });
 
+        refreshButton.addEventListener('click', resetTest);
+
         window.addEventListener('beforeunload', () => {
-            localStorage.setItem(STORAGE_KEY, totalDownloadedBytes);
+            if (totalDownloadedBytes < RESET_THRESHOLD_BYTES) {
+                localStorage.setItem(STORAGE_KEY, totalDownloadedBytes);
+            } else {
+                localStorage.removeItem(STORAGE_KEY);
+            }
         });
 
         window.onload = () => {
